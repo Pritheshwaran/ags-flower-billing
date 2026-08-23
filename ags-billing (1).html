@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AGS Flower Billing</title>
+<style>
+  :root{
+    --cream:#F5F1E1;
+    --paper:#FFFFFF;
+    --red:#1F6E52;
+    --red-dark:#123D2E;
+    --gold:#E0A526;
+    --green:#B23A63;
+    --ink:#28241C;
+    --line:#DCD3B4;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:"Segoe UI", "Noto Sans Tamil", system-ui, sans-serif;
+    background:var(--cream);
+    color:var(--ink);
+  }
+  header.app-header{
+    background:var(--red-dark);
+    color:#fff;
+    padding:14px 20px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    flex-wrap:wrap;
+    gap:8px;
+  }
+  .brand{
+    display:flex;
+    align-items:center;
+    gap:12px;
+  }
+  .brand svg{flex-shrink:0;}
+  .brand-text .logo{
+    font-family:Georgia, "Times New Roman", serif;
+    font-weight:800;
+    font-size:26px;
+    letter-spacing:1px;
+    color:#fff;
+    line-height:1;
+  }
+  .brand-text .sub{
+    font-size:12px;
+    color:#F1D98B;
+    margin-top:2px;
+  }
+  nav.tabs{
+    display:flex;
+    gap:4px;
+    background:#fff;
+    border-bottom:2px solid var(--line);
+    padding:0 12px;
+    overflow-x:auto;
+  }
+  nav.tabs button{
+    border:none;
+    background:none;
+    padding:12px 16px;
+    font-size:14px;
+    font-weight:600;
+    color:#8a7a6a;
+    cursor:pointer;
+    border-bottom:3px solid transparent;
+    white-space:nowrap;
+  }
+  nav.tabs button.active{
+    color:var(--red);
+    border-bottom-color:var(--red);
+  }
+  main{
+    max-width:900px;
+    margin:0 auto;
+    padding:18px 14px 60px;
+  }
+  .card{
+    background:var(--paper);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:16px;
+    margin-bottom:16px;
+  }
+  .card h2{
+    margin:0 0 12px;
+    font-size:17px;
+    color:var(--red-dark);
+  }
+  label{
+    display:block;
+    font-size:13px;
+    color:#6b5c4d;
+    margin-bottom:4px;
+    margin-top:10px;
+  }
+  input, select{
+    width:100%;
+    padding:9px 10px;
+    border:1px solid var(--line);
+    border-radius:7px;
+    font-size:16px;
+    background:#fff;
+    color:var(--ink);
+  }
+  input:focus, select:focus{
+    outline:2px solid var(--gold);
+    outline-offset:1px;
+  }
+  .row{display:flex; gap:10px; flex-wrap:wrap;}
+  .row > div{flex:1; min-width:130px;}
+  button.primary{
+    margin-top:14px;
+    background:var(--red);
+    color:#fff;
+    border:none;
+    padding:11px 18px;
+    border-radius:7px;
+    font-size:14px;
+    font-weight:700;
+    cursor:pointer;
+  }
+  button.primary:hover{background:var(--red-dark);}
+  button.ghost{
+    background:none;
+    border:1px solid var(--line);
+    color:var(--ink);
+    padding:6px 12px;
+    border-radius:6px;
+    font-size:13px;
+    cursor:pointer;
+  }
+  button.danger{color:var(--green); border-color:var(--green);}
+  table{
+    width:100%;
+    border-collapse:collapse;
+    font-size:13.5px;
+    margin-top:10px;
+  }
+  .table-scroll{overflow-x:auto; -webkit-overflow-scrolling:touch;}
+  .table-scroll table{min-width:480px;}
+  th, td{
+    border:1px solid var(--line);
+    padding:7px 8px;
+    text-align:left;
+  }
+  th{background:#EFE4C0; color:var(--red-dark);}
+  .hint{font-size:12px; color:#8a7a6a; margin-top:4px;}
+  .empty{color:#a0907e; font-style:italic; padding:10px 0;}
+  .pill{
+    display:inline-block;
+    background:#EFE4C0;
+    color:var(--red-dark);
+    padding:2px 8px;
+    border-radius:20px;
+    font-size:12px;
+    margin:2px 4px 2px 0;
+    cursor:pointer;
+    border:1px solid var(--line);
+  }
+  .pill.selected{background:var(--red); color:#fff; border-color:var(--red);}
+  .flex-between{display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;}
+
+  /* ---- BILL / PRINT STYLES ---- */
+  #billOutput{display:none;}
+  .bill-paper{
+    background:#fff;
+    border:2.5px solid var(--red);
+    border-radius:4px;
+    padding:20px;
+  }
+  .bill-head{text-align:center; border-bottom:2px solid var(--red); padding-bottom:10px; margin-bottom:14px;}
+  .bill-head .logo{
+    font-family:Georgia, serif;
+    font-weight:800;
+    font-size:34px;
+    color:var(--red);
+    letter-spacing:2px;
+    margin:0;
+  }
+  .bill-head .biz-tamil{color:var(--red-dark); font-size:15px; margin:2px 0;}
+  .bill-head .owner{font-size:13px; color:var(--ink); margin:2px 0;}
+  .bill-head .addr{font-size:12.5px; color:#5b4c3d;}
+  .bill-head .cell{font-size:12.5px; color:var(--ink); margin-top:4px;}
+  .bill-meta{display:flex; justify-content:space-between; font-size:13px; margin-bottom:10px; flex-wrap:wrap; gap:6px;}
+  .flower-block{margin-bottom:14px;}
+  .flower-block h3{
+    background:var(--red);
+    color:#fff;
+    padding:6px 10px;
+    margin:0 0 0;
+    font-size:14px;
+    border-radius:4px 4px 0 0;
+  }
+  .flower-block table{margin-top:0;}
+  .flower-total-row td{font-weight:700; background:#F1E6C6;}
+  .grand-total{
+    text-align:right;
+    font-size:18px;
+    font-weight:800;
+    color:var(--red-dark);
+    border-top:3px double var(--red);
+    padding-top:10px;
+    margin-top:6px;
+  }
+  @media print{
+    header.app-header, nav.tabs, .no-print{display:none !important;}
+    body{background:#fff;}
+    main{max-width:100%; padding:0;}
+    #billOutput{display:block !important;}
+    .card{border:none; padding:0;}
+    .table-scroll{overflow:visible !important;}
+    .table-scroll table{min-width:0 !important;}
+  }
+</style>
+</head>
+<body>
+
+<header class="app-header">
+  <div class="brand">
+    <svg width="34" height="34" viewBox="0 0 40 40" fill="none">
+      <circle cx="10" cy="14" r="5" fill="#F1D98B"/>
+      <circle cx="16" cy="10" r="5" fill="#F1D98B"/>
+      <circle cx="16" cy="20" r="5" fill="#F1D98B"/>
+      <circle cx="8" cy="24" r="4" fill="#F1D98B"/>
+      <circle cx="15" cy="15" r="3" fill="var(--gold)"/>
+    </svg>
+    <div class="brand-text">
+      <div class="logo">AGS</div>
+      <div class="sub">Flower Billing</div>
+    </div>
+  </div>
+  <div class="sub" id="headerBizName" style="text-align:right;"></div>
+</header>
+
+<nav class="tabs">
+  <button class="tabBtn active" data-tab="settings">Business Info</button>
+  <button class="tabBtn" data-tab="customers">Customers</button>
+  <button class="tabBtn" data-tab="entry">Daily Entry</button>
+  <button class="tabBtn" data-tab="bill">Bill</button>
+</nav>
+
+<main>
+
+  <!-- SETTINGS TAB -->
+  <section id="tab-settings" class="tabPanel">
+    <div class="card">
+      <h2>Business Information (shown on the printed bill)</h2>
+      <label>Business Name (Tamil)</label>
+      <input id="setBizTamil" placeholder="AGS புஷ்ப வியாபாரம்">
+      <label>Owner Name</label>
+      <input id="setOwner" placeholder="உரிமை : S. அன்பு">
+      <label>Address</label>
+      <input id="setAddr" placeholder="பொன்னியம்மன் கோயில் தெரு, திருப்பத்தூர் மாவட்டம்">
+      <label>Cell Number</label>
+      <input id="setCell" placeholder="9894320631">
+      <button class="primary" onclick="saveSettings()">Save Business Info</button>
+    </div>
+    <div class="card">
+      <h2>Flower List</h2>
+      <p class="hint">These are the flower types your customers can supply. You can add more anytime.</p>
+      <div id="flowerListDisplay"></div>
+      <div class="row">
+        <div><label>Tamil Name</label><input id="newFlowerTamil" placeholder="e.g. மல்லி"></div>
+        <div><label>Short Code</label><input id="newFlowerCode" placeholder="e.g. JAS"></div>
+      </div>
+      <button class="primary" onclick="addFlower()">Add Flower</button>
+    </div>
+  </section>
+
+  <!-- CUSTOMERS TAB -->
+  <section id="tab-customers" class="tabPanel" style="display:none;">
+    <div class="card">
+      <h2>Add Customer</h2>
+      <label>Customer Name</label>
+      <input id="newCustomerName" placeholder="e.g. Pritheshwaran">
+      <button class="primary" onclick="addCustomer()">Add Customer</button>
+    </div>
+    <div class="card">
+      <h2>All Customers</h2>
+      <div id="customerListDisplay"><p class="empty">No customers yet.</p></div>
+    </div>
+  </section>
+
+  <!-- DAILY ENTRY TAB -->
+  <section id="tab-entry" class="tabPanel" style="display:none;">
+    <div class="card">
+      <h2>Add Daily Entry</h2>
+      <label>Customer</label>
+      <select id="entryCustomer"></select>
+      <label>Flower</label>
+      <select id="entryFlower"></select>
+      <div class="row">
+        <div>
+          <label>Date</label>
+          <input type="date" id="entryDate">
+        </div>
+        <div>
+          <label>Time (optional — e.g. Morning / Evening)</label>
+          <input id="entrySession" placeholder="Morning">
+        </div>
+      </div>
+      <div class="row">
+        <div>
+          <label>Quantity</label>
+          <input type="number" step="any" id="entryQty" oninput="previewQty()" placeholder="e.g. 200 or 2">
+          <div class="hint" id="qtyPreview">Numbers 50 and above = grams. Numbers below 50 = kilograms.</div>
+        </div>
+      </div>
+      <div class="hint">No rate needed here — you'll set the rate once, for the whole 15-day period, when you generate the bill.</div>
+      <button class="primary" onclick="addEntry()">Save Entry</button>
+    </div>
+
+    <div class="card">
+      <div class="flex-between">
+        <h2 style="margin:0;">Recent Entries</h2>
+        <select id="entryFilterCustomer" onchange="renderEntryTable()" style="width:auto;"></select>
+      </div>
+      <div id="entryTableWrap"><p class="empty">No entries yet.</p></div>
+    </div>
+  </section>
+
+  <!-- BILL TAB -->
+  <section id="tab-bill" class="tabPanel" style="display:none;">
+    <div class="card no-print">
+      <h2>Generate Bill</h2>
+      <label>Customer</label>
+      <select id="billCustomer" onchange="loadPeriodsForCustomer()"></select>
+      <label>Billing Period</label>
+      <select id="billPeriod" onchange="renderRateInputs()"></select>
+      <div id="billRatesWrap"></div>
+      <button class="primary" onclick="generateBill()">Show Bill</button>
+      <button class="ghost" style="margin-top:14px; margin-left:8px;" onclick="printBill()">🖨 Print Bill</button>
+    </div>
+
+    <div id="billOutput"></div>
+  </section>
+
+</main>
+
+<div id="confirmOverlay" class="no-print" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;align-items:center;justify-content:center;padding:20px;">
+  <div style="background:#fff;border-radius:12px;padding:20px;max-width:320px;width:100%;text-align:center;">
+    <p id="confirmOverlayText" style="font-size:15px; margin:0 0 16px;"></p>
+    <div style="display:flex; gap:10px; justify-content:center;">
+      <button class="ghost" onclick="closeConfirmOverlay()">Cancel</button>
+      <button class="primary" style="margin-top:0;" onclick="confirmOverlayYes()">Delete</button>
+    </div>
+  </div>
+</div>
+
+<div id="toastBox" class="no-print" style="display:none;position:fixed;left:50%; bottom:22px; transform:translateX(-50%); background:var(--red-dark); color:#fff; padding:11px 18px; border-radius:8px; font-size:14px; max-width:90%; text-align:center; z-index:1001; box-shadow:0 4px 14px rgba(0,0,0,.25);"></div>
+
+<script>
+/* ---------------- DATA LAYER (localStorage — no server, no database needed) ---------------- */
+const DEFAULT_FLOWERS = [
+  {tamil:"மல்லி", code:"JAS"},
+  {tamil:"முல்லை", code:"ML"},
+  {tamil:"பச்சை முல்லை", code:"SP"},
+  {tamil:"காய்", code:"KAI"},
+  {tamil:"சம்பங்கி", code:"SAMP"},
+  {tamil:"கனகாம்பரம்", code:"KAN"},
+  {tamil:"ஜாதி மல்லி", code:"JM"},
+  {tamil:"Color காய்", code:"CA.KAI"},
+];
+
+function load(key, fallback){
+  try{
+    const v = localStorage.getItem(key);
+    return v ? JSON.parse(v) : fallback;
+  }catch(e){ return fallback; }
+}
+function save(key, val){ localStorage.setItem(key, JSON.stringify(val)); }
+
+let settings = load('ags_settings', {bizTamil:"AGS புஷ்ப வியாபாரம்", owner:"உரிமை : S. அன்பு", addr:"பொன்னியம்மன் கோயில் தெரு, திருப்பத்தூர் மாவட்டம்.", cell:"9894320631"});
+let flowers = load('ags_flowers', DEFAULT_FLOWERS);
+let customers = load('ags_customers', []); // {id, name}
+let entries = load('ags_entries', []); // {id, customerId, flowerCode, date, session, qtyRaw, qtyGrams, rate, amount}
+
+function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+
+/* ---------------- CUSTOM TOAST + CONFIRM (native alert()/confirm() get silently blocked
+   inside many mobile in-app browsers and embedded webviews, so we use our own) ---------------- */
+let toastTimer = null;
+function showToast(msg){
+  const box = document.getElementById('toastBox');
+  box.textContent = msg;
+  box.style.display = 'block';
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>{ box.style.display='none'; }, 2600);
+}
+let confirmCallback = null;
+function showConfirm(text, onYes){
+  document.getElementById('confirmOverlayText').textContent = text;
+  confirmCallback = onYes;
+  document.getElementById('confirmOverlay').style.display = 'flex';
+}
+function confirmOverlayYes(){
+  const cb = confirmCallback;
+  closeConfirmOverlay();
+  if(cb) cb();
+}
+function closeConfirmOverlay(){
+  document.getElementById('confirmOverlay').style.display = 'none';
+  confirmCallback = null;
+}
+
+/* ---------------- TABS ---------------- */
+document.querySelectorAll('.tabBtn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.tabBtn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('.tabPanel').forEach(p=>p.style.display='none');
+    document.getElementById('tab-'+btn.dataset.tab).style.display='block';
+    if(btn.dataset.tab==='entry') refreshEntryTab();
+    if(btn.dataset.tab==='bill') refreshBillTab();
+    if(btn.dataset.tab==='customers') renderCustomerList();
+  });
+});
+
+/* ---------------- SETTINGS ---------------- */
+function renderSettingsForm(){
+  document.getElementById('setBizTamil').value = settings.bizTamil;
+  document.getElementById('setOwner').value = settings.owner;
+  document.getElementById('setAddr').value = settings.addr;
+  document.getElementById('setCell').value = settings.cell;
+  document.getElementById('headerBizName').textContent = settings.bizTamil;
+  renderFlowerList();
+}
+function saveSettings(){
+  settings = {
+    bizTamil: document.getElementById('setBizTamil').value || settings.bizTamil,
+    owner: document.getElementById('setOwner').value,
+    addr: document.getElementById('setAddr').value,
+    cell: document.getElementById('setCell').value,
+  };
+  save('ags_settings', settings);
+  renderSettingsForm();
+  showToast('Business info saved.');
+}
+function renderFlowerList(){
+  const wrap = document.getElementById('flowerListDisplay');
+  wrap.innerHTML = flowers.map(f=>`<span class="pill">${f.tamil} (${f.code})</span>`).join(' ');
+}
+function addFlower(){
+  const tamil = document.getElementById('newFlowerTamil').value.trim();
+  const code = document.getElementById('newFlowerCode').value.trim();
+  if(!tamil || !code){ showToast('Enter both Tamil name and code.'); return; }
+  flowers.push({tamil, code});
+  save('ags_flowers', flowers);
+  document.getElementById('newFlowerTamil').value='';
+  document.getElementById('newFlowerCode').value='';
+  renderFlowerList();
+  populateFlowerDropdown();
+}
+
+/* ---------------- CUSTOMERS ---------------- */
+function addCustomer(){
+  const name = document.getElementById('newCustomerName').value.trim();
+  if(!name){ showToast('Enter a customer name.'); return; }
+  customers.push({id: uid(), name});
+  save('ags_customers', customers);
+  document.getElementById('newCustomerName').value='';
+  renderCustomerList();
+}
+function deleteCustomer(id){
+  showConfirm('Delete this customer and all their entries?', ()=>{
+    customers = customers.filter(c=>c.id!==id);
+    entries = entries.filter(e=>e.customerId!==id);
+    save('ags_customers', customers);
+    save('ags_entries', entries);
+    renderCustomerList();
+  });
+}
+function renderCustomerList(){
+  const wrap = document.getElementById('customerListDisplay');
+  if(customers.length===0){ wrap.innerHTML='<p class="empty">No customers yet.</p>'; return; }
+  wrap.innerHTML = '<div class="table-scroll"><table><tr><th>Name</th><th>Total Entries</th><th></th></tr>' +
+    customers.map(c=>{
+      const count = entries.filter(e=>e.customerId===c.id).length;
+      return `<tr><td>${c.name}</td><td>${count}</td><td><button class="ghost danger" onclick="deleteCustomer('${c.id}')">Delete</button></td></tr>`;
+    }).join('') + '</table></div>';
+}
+
+/* ---------------- QUANTITY RULE ---------------- */
+// Business rule: values 50 and above are already in grams.
+// Values below 50 are in kilograms (multiply by 1000 to get grams).
+function interpretQty(raw){
+  const n = parseFloat(raw);
+  if(isNaN(n)) return null;
+  const grams = n >= 50 ? n : n*1000;
+  return {grams, raw:n};
+}
+function formatGrams(g){
+  if(g >= 1000) return (g/1000) + " kg";
+  return g + " g";
+}
+
+/* ---------------- DAILY ENTRY ---------------- */
+function populateCustomerDropdowns(){
+  const opts = customers.map(c=>`<option value="${c.id}">${c.name}</option>`).join('');
+  document.getElementById('entryCustomer').innerHTML = opts || '<option value="">No customers — add one first</option>';
+  document.getElementById('billCustomer').innerHTML = opts || '<option value="">No customers</option>';
+  document.getElementById('entryFilterCustomer').innerHTML = '<option value="">All customers</option>' + opts;
+}
+function populateFlowerDropdown(){
+  document.getElementById('entryFlower').innerHTML = flowers.map(f=>`<option value="${f.code}">${f.tamil} (${f.code})</option>`).join('');
+}
+function refreshEntryTab(){
+  populateCustomerDropdowns();
+  populateFlowerDropdown();
+  if(!document.getElementById('entryDate').value){
+    document.getElementById('entryDate').value = new Date().toISOString().slice(0,10);
+  }
+  renderEntryTable();
+}
+function previewQty(){
+  const raw = document.getElementById('entryQty').value;
+  const q = interpretQty(raw);
+  const qtyPrev = document.getElementById('qtyPreview');
+  if(!q){ qtyPrev.textContent = "Numbers 50 and above = grams. Numbers below 50 = kilograms."; return; }
+  qtyPrev.textContent = `You entered ${q.raw} → understood as ${formatGrams(q.grams)}`;
+}
+function addEntry(){
+  const customerId = document.getElementById('entryCustomer').value;
+  const flowerCode = document.getElementById('entryFlower').value;
+  const date = document.getElementById('entryDate').value;
+  const session = document.getElementById('entrySession').value.trim();
+  const rawQty = document.getElementById('entryQty').value;
+
+  if(!customerId){ showToast('Choose a customer (add one in the Customers tab if the list is empty).'); return; }
+  if(!date){ showToast('Choose the date the flowers were given.'); return; }
+  const q = interpretQty(rawQty);
+  if(!q){ showToast('Enter a valid quantity.'); return; }
+
+  entries.push({
+    id: uid(), customerId, flowerCode, date, session,
+    qtyRaw: q.raw, qtyGrams: q.grams
+  });
+  save('ags_entries', entries);
+
+  document.getElementById('entryQty').value='';
+  document.getElementById('entrySession').value='';
+  document.getElementById('qtyPreview').textContent = "Numbers 50 and above = grams. Numbers below 50 = kilograms.";
+  renderEntryTable();
+  renderCustomerList();
+}
+function deleteEntry(id){
+  showConfirm('Delete this entry?', ()=>{
+    entries = entries.filter(e=>e.id!==id);
+    save('ags_entries', entries);
+    renderEntryTable();
+  });
+}
+function renderEntryTable(){
+  const filterId = document.getElementById('entryFilterCustomer').value;
+  let list = entries.slice().sort((a,b)=> b.date.localeCompare(a.date));
+  if(filterId) list = list.filter(e=>e.customerId===filterId);
+  list = list.slice(0,40);
+  const wrap = document.getElementById('entryTableWrap');
+  if(list.length===0){ wrap.innerHTML='<p class="empty">No entries yet.</p>'; return; }
+  wrap.innerHTML = '<div class="table-scroll"><table><tr><th>Date</th><th>Customer</th><th>Flower</th><th>Time</th><th>Qty</th><th></th></tr>' +
+    list.map(e=>{
+      const cust = customers.find(c=>c.id===e.customerId);
+      const fl = flowers.find(f=>f.code===e.flowerCode);
+      return `<tr>
+        <td>${e.date}</td>
+        <td>${cust?cust.name:'—'}</td>
+        <td>${fl?fl.tamil+' ('+fl.code+')':e.flowerCode}</td>
+        <td>${e.session||'—'}</td>
+        <td>${formatGrams(e.qtyGrams)}</td>
+        <td><button class="ghost danger" onclick="deleteEntry('${e.id}')">✕</button></td>
+      </tr>`;
+    }).join('') + '</table></div>';
+}
+
+/* ---------------- BILLING PERIOD LOGIC ---------------- */
+function getPeriodForDate(dateStr){
+  const [y,m,d] = dateStr.split('-').map(Number);
+  const day = d;
+  const lastDay = new Date(y, m, 0).getDate();
+  if(day<=15){
+    return {start:`${y}-${String(m).padStart(2,'0')}-01`, end:`${y}-${String(m).padStart(2,'0')}-15`, label:monthName(m)+' 1 - 15, '+y};
+  } else {
+    return {start:`${y}-${String(m).padStart(2,'0')}-16`, end:`${y}-${String(m).padStart(2,'0')}-${lastDay}`, label:monthName(m)+' 16 - '+lastDay+', '+y};
+  }
+}
+function monthName(m){
+  return ["January","February","March","April","May","June","July","August","September","October","November","December"][m-1];
+}
+function refreshBillTab(){
+  populateCustomerDropdowns();
+  loadPeriodsForCustomer();
+}
+function loadPeriodsForCustomer(){
+  const customerId = document.getElementById('billCustomer').value;
+  const custEntries = entries.filter(e=>e.customerId===customerId);
+  const periodMap = {};
+  custEntries.forEach(e=>{
+    const p = getPeriodForDate(e.date);
+    periodMap[p.start+'|'+p.end] = p.label;
+  });
+  const keys = Object.keys(periodMap).sort().reverse();
+  const sel = document.getElementById('billPeriod');
+  if(keys.length===0){
+    sel.innerHTML = '<option value="">No entries for this customer yet</option>';
+  } else {
+    sel.innerHTML = keys.map(k=>`<option value="${k}">${periodMap[k]}</option>`).join('');
+  }
+  renderRateInputs();
+}
+function renderRateInputs(){
+  const customerId = document.getElementById('billCustomer').value;
+  const periodVal = document.getElementById('billPeriod').value;
+  const wrap = document.getElementById('billRatesWrap');
+  if(!customerId || !periodVal){ wrap.innerHTML=''; return; }
+  const [start,end] = periodVal.split('|');
+  const relevant = entries.filter(e=>e.customerId===customerId && e.date>=start && e.date<=end);
+  if(relevant.length===0){ wrap.innerHTML=''; return; }
+
+  const byFlower = {};
+  relevant.forEach(e=>{
+    if(!byFlower[e.flowerCode]) byFlower[e.flowerCode] = [];
+    byFlower[e.flowerCode].push(e);
+  });
+
+  let html = '<label style="margin-top:16px;">Fill in the rate for each day — rate can be different day to day</label>';
+  Object.keys(byFlower).forEach(code=>{
+    const fl = flowers.find(f=>f.code===code);
+    const rows = byFlower[code].slice().sort((a,b)=>a.date.localeCompare(b.date));
+    html += `<div class="flower-block">
+      <h3>${fl?fl.tamil+' ('+fl.code+')':code}</h3>
+      <div class="table-scroll"><table>
+        <tr><th>Date</th><th>Weight</th><th>Rate (₹/kg)</th><th>Amount</th></tr>
+        ${rows.map(e=>`<tr>
+          <td>${e.date}${e.session?' ('+e.session+')':''}</td>
+          <td>${formatGrams(e.qtyGrams)}</td>
+          <td><input type="number" step="any" class="billRateInput" data-entry-id="${e.id}" value="${e.rate!=null?e.rate:''}" oninput="recalcEditableTotals()" style="max-width:110px;"></td>
+          <td class="amountCell" data-entry-id="${e.id}">—</td>
+        </tr>`).join('')}
+        <tr class="flower-total-row"><td colspan="3">Subtotal — ${fl?fl.tamil:code}</td><td class="subtotalCell" data-flower="${code}">₹0.00</td></tr>
+      </table></div>
+    </div>`;
+  });
+  html += '<div class="grand-total" id="editableGrandTotal">Running Total: ₹0.00</div>';
+  wrap.innerHTML = html;
+  recalcEditableTotals();
+}
+function recalcEditableTotals(){
+  const inputs = document.querySelectorAll('.billRateInput');
+  const flowerSubtotals = {};
+  let grand = 0;
+  inputs.forEach(inp=>{
+    const entryId = inp.dataset.entryId;
+    const entry = entries.find(e=>e.id===entryId);
+    const amountCell = document.querySelector(`.amountCell[data-entry-id="${entryId}"]`);
+    const rate = parseFloat(inp.value);
+    if(!entry || isNaN(rate)){
+      if(amountCell) amountCell.textContent = '—';
+      return;
+    }
+    const amount = (entry.qtyGrams/1000)*rate;
+    if(amountCell) amountCell.textContent = '₹'+amount.toFixed(2);
+    flowerSubtotals[entry.flowerCode] = (flowerSubtotals[entry.flowerCode]||0) + amount;
+    grand += amount;
+  });
+  document.querySelectorAll('.subtotalCell').forEach(cell=>{
+    const code = cell.dataset.flower;
+    cell.textContent = '₹'+(flowerSubtotals[code]||0).toFixed(2);
+  });
+  const gt = document.getElementById('editableGrandTotal');
+  if(gt) gt.textContent = 'Running Total: ₹'+grand.toFixed(2);
+}
+function generateBill(){
+  const customerId = document.getElementById('billCustomer').value;
+  const periodVal = document.getElementById('billPeriod').value;
+  const cust = customers.find(c=>c.id===customerId);
+  const out = document.getElementById('billOutput');
+  if(!cust || !periodVal){ out.style.display='none'; showToast('Choose a customer and a billing period.'); return false; }
+  const [start,end] = periodVal.split('|');
+
+  const relevant = entries.filter(e=>e.customerId===customerId && e.date>=start && e.date<=end);
+  if(relevant.length===0){ out.style.display='none'; showToast('No entries in this period.'); return false; }
+
+  // read the rate typed for each individual day and save it onto that entry
+  const rateInputs = document.querySelectorAll('.billRateInput');
+  let missingRate = false;
+  rateInputs.forEach(inp=>{
+    const entryId = inp.dataset.entryId;
+    const entry = entries.find(e=>e.id===entryId);
+    const v = parseFloat(inp.value);
+    if(isNaN(v)){ missingRate = true; return; }
+    if(entry) entry.rate = v;
+  });
+  if(missingRate){ showToast('Enter a rate for every day before generating the bill.'); return false; }
+  save('ags_entries', entries);
+
+  // group by flower
+  const byFlower = {};
+  relevant.forEach(e=>{
+    if(!byFlower[e.flowerCode]) byFlower[e.flowerCode] = [];
+    byFlower[e.flowerCode].push(e);
+  });
+
+  let grandTotal = 0;
+  let flowerBlocksHtml = '';
+  Object.keys(byFlower).forEach(code=>{
+    const fl = flowers.find(f=>f.code===code);
+    const rows = byFlower[code].slice().sort((a,b)=>a.date.localeCompare(b.date));
+    let subtotal = 0;
+    const rowsHtml = rows.map(e=>{
+      const amount = (e.qtyGrams/1000)*e.rate;
+      subtotal += amount;
+      return `<tr><td>${e.date}${e.session?' ('+e.session+')':''}</td><td>${formatGrams(e.qtyGrams)}</td><td>₹${e.rate}</td><td>₹${amount.toFixed(2)}</td></tr>`;
+    }).join('');
+    grandTotal += subtotal;
+    flowerBlocksHtml += `
+      <div class="flower-block">
+        <h3>${fl?fl.tamil+' ('+fl.code+')':code}</h3>
+        <div class="table-scroll"><table>
+          <tr><th>Date</th><th>Weight</th><th>Rate</th><th>Amount</th></tr>
+          ${rowsHtml}
+          <tr class="flower-total-row"><td colspan="3">Total — ${fl?fl.tamil:code}</td><td>₹${subtotal.toFixed(2)}</td></tr>
+        </table></div>
+      </div>`;
+  });
+
+  const periodLabelSel = document.getElementById('billPeriod');
+  const periodLabel = periodLabelSel.options[periodLabelSel.selectedIndex].text;
+
+  out.innerHTML = `
+    <div class="bill-paper">
+      <div class="bill-head">
+        <p class="logo">AGS</p>
+        <p class="biz-tamil">${settings.bizTamil}</p>
+        <p class="owner">${settings.owner}</p>
+        <p class="addr">${settings.addr}</p>
+        <p class="cell">Cell: ${settings.cell}</p>
+      </div>
+      <div class="bill-meta">
+        <div><strong>Customer:</strong> ${cust.name}</div>
+        <div><strong>Billing Period:</strong> ${periodLabel}</div>
+      </div>
+      ${flowerBlocksHtml}
+      <div class="grand-total">GRAND TOTAL: ₹${grandTotal.toFixed(2)}</div>
+    </div>
+  `;
+  out.style.display='block';
+  return true;
+}
+function printBill(){
+  if(generateBill()){
+    // give the browser a moment to paint the freshly generated bill before printing
+    setTimeout(()=>window.print(), 50);
+  }
+}
+
+/* ---------------- INIT ---------------- */
+renderSettingsForm();
+populateCustomerDropdowns();
+populateFlowerDropdown();
+renderCustomerList();
+</script>
+</body>
+</html>
