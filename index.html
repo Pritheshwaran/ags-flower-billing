@@ -167,12 +167,14 @@
 
   /* ---- BILL / PRINT STYLES ---- */
   #billOutput{display:none;}
+  #allBillsOutput{display:none;}
   .bill-paper{
     background:#fff;
     border:2.5px solid var(--red);
     border-radius:4px;
     padding:20px;
   }
+  #allBillsOutput .bill-paper{margin-bottom:22px;}
   .bill-head{text-align:center; border-bottom:2px solid var(--red); padding-bottom:10px; margin-bottom:14px;}
   .bill-head .logo{
     font-family:Georgia, serif;
@@ -212,6 +214,8 @@
     body{background:#fff;}
     main{max-width:100%; padding:0;}
     #billOutput{display:block !important;}
+    #allBillsOutput{display:block !important;}
+    #allBillsOutput .bill-paper:not(:last-child){page-break-after:always;}
     .card{border:none; padding:0;}
     .table-scroll{overflow:visible !important;}
     .table-scroll table{min-width:0 !important;}
@@ -242,6 +246,7 @@
   <button class="tabBtn" data-tab="customers">Customers</button>
   <button class="tabBtn" data-tab="entry">Daily Entry</button>
   <button class="tabBtn" data-tab="bill">Bill</button>
+  <button class="tabBtn" data-tab="allbills">Print All</button>
 </nav>
 
 <main>
@@ -279,6 +284,14 @@
       <label>Customer Name</label>
       <input id="newCustomerName" placeholder="e.g. Pritheshwaran">
       <button class="primary" onclick="addCustomer()">Add Customer</button>
+    </div>
+    <div class="card">
+      <h2>Add Many Customers at Once</h2>
+      <p class="hint">Paste names, one per line. Names already in your list are skipped automatically.</p>
+      <textarea id="bulkCustomerNames" rows="6" style="width:100%; padding:9px 10px; border:1px solid var(--line); border-radius:7px; font-size:16px; font-family:inherit;" placeholder="Krishnan
+Sathish
+Sneha"></textarea>
+      <button class="primary" onclick="bulkAddCustomers()">Add All Names</button>
     </div>
     <div class="card">
       <h2>All Customers</h2>
@@ -340,6 +353,21 @@
     <div id="billOutput"></div>
   </section>
 
+  <!-- ALL BILLS TAB (print every customer for a period, one after another) -->
+  <section id="tab-allbills" class="tabPanel" style="display:none;">
+    <div class="card no-print">
+      <h2>Print All Customer Bills</h2>
+      <p class="hint">Pick a billing period. Every customer with entries in that period appears below — fill in each person's rates once, then print them all together.</p>
+      <label>Billing Period</label>
+      <select id="allBillsPeriod" onchange="renderAllBillsRateInputs()"></select>
+      <div id="allBillsRatesWrap"></div>
+      <button class="primary" onclick="generateAllBills()">Show All Bills</button>
+      <button class="ghost" style="margin-top:14px; margin-left:8px;" onclick="printAllBills()">🖨 Print All Bills</button>
+    </div>
+
+    <div id="allBillsOutput"></div>
+  </section>
+
 </main>
 
 <div id="confirmOverlay" class="no-print" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;align-items:center;justify-content:center;padding:20px;">
@@ -366,6 +394,39 @@ const DEFAULT_FLOWERS = [
   {tamil:"ஜாதி மல்லி", code:"JM"},
   {tamil:"Color காய்", code:"CA.KAI"},
 ];
+
+const SEED_CUSTOMERS = [
+  "கிருஷ்ணன் (Krishnan)","P. சதீஷ் (P. Sathish)","சினேகா (Sneha)","காணிஷ் (Kanish)",
+  "புஷ்பா (Pushpa)","வேண்டா (Venda)","மருதீஸ்வரி (Marutheeswari)","குணசேகர் (Gunasekar)",
+  "திருப்பதி A (Tirupati A)","ஜெலில் (Jalil)","சுப்பிரமணி (Subramani)","கோவிந்தசாமி (Govindasamy)",
+  "அம்பிகா (Ambika)","முருகன் (Murugan)","கிருஷ்ணமூர்த்தி (Krishnamoorthy)","அற்புதம் (Arputham)",
+  "மித்ரா (Mithra)","விஜிமா (Vijima)","ஹிநிசா / ஸ்ரீநிஷா (Srinisha)","முருகம்மாள் (Murugammal)",
+  "கீர்த்தனா (Keerthana)","தர்சனா (Dharshana)","கேசவன் (Kesavan)","K. C. முருகன் (K. C. Murugan)",
+  "ஜெயராமன் (Jeyaraman)","அரிஸ் (Haris)","மதுமிதா (Madhumitha)","பிரபு (Prabhu)",
+  "திருப்பதி B (Thirupathi B)","சூர்யா (Surya)","ஜெகநாதன் (Jeganathan)","சம்பத் (Sampath)",
+  "சுஜாதா (Sujatha)","அசோக் (Ashok)","சுரேஷ் (Suresh)","அரிதாஸ் (Harikaas)",
+  "கார்த்திகேயன் (Karthikeyan)","பாலூ (Balu)","அரசு (Arasu)","முருகேசன் (Murugesan)",
+  "சத்தியா (Sathya)","ராஜேஷ் (Rajesh)","ரஜினி (Rajini)","A.S.P",
+  "சாமுண்டி (Samundi)","பிரசாந்த் (Prasanth)","சதீஷ் (அகரம்) (Satheesh)","ஆனந்த்குமார் (Anandkumar)",
+  "கோவிந்தராஜ் (Govindaraj)","சந்தோஷ்குமார் (Santhoshkumar)","பிரகாஷ் (Prakash)","P. S. வேலன் (Velan)",
+  "அண்ணாமலை (Annamalai)","செல்வம் (Selvam)","சீனு (Seenu)","அனிதா (Anitha)",
+  "உதயகுமார் (Udhayakumar)","சசிகுமார் (Sasikumar)","சிகாமணி (Sigamani)","வெங்கடேசன் (Venkatesan)",
+  "மூர்த்தி (Moorthi)","நவீன்குமார் (Naveenkumar)","தீபிகா (Theepika)","மேகநாதன் (Meganathan)",
+  "மேரீ (Meri)","தேவேந்திரன் (Devendran)","பொன்னுசாமி (Ponnusamy)","குமார் (Kumar)",
+  "கனகேசன் (Kanakesan)","சின்னபையன் (Chinnapaiyan)","சரவணன் (Saravanan)","சசிவெங்கடேஷ் (Si. Venkatesh)"
+];
+function seedCustomersIfNeeded(){
+  const existing = new Set(customers.map(c=>c.name));
+  let added = false;
+  SEED_CUSTOMERS.forEach(name=>{
+    if(!existing.has(name)){
+      customers.push({id: uid(), name});
+      existing.add(name);
+      added = true;
+    }
+  });
+  if(added) save('ags_customers', customers);
+}
 
 function load(key, fallback){
   try{
@@ -418,6 +479,7 @@ document.querySelectorAll('.tabBtn').forEach(btn=>{
     if(btn.dataset.tab==='entry') refreshEntryTab();
     if(btn.dataset.tab==='bill') refreshBillTab();
     if(btn.dataset.tab==='customers') renderCustomerList();
+    if(btn.dataset.tab==='allbills') refreshAllBillsTab();
   });
 });
 
@@ -465,6 +527,24 @@ function addCustomer(){
   save('ags_customers', customers);
   document.getElementById('newCustomerName').value='';
   renderCustomerList();
+}
+function bulkAddCustomers(){
+  const raw = document.getElementById('bulkCustomerNames').value;
+  const names = raw.split('\n').map(n=>n.trim()).filter(n=>n.length>0);
+  if(names.length===0){ showToast('Paste at least one name.'); return; }
+  const existing = new Set(customers.map(c=>c.name));
+  let added = 0;
+  names.forEach(name=>{
+    if(!existing.has(name)){
+      customers.push({id: uid(), name});
+      existing.add(name);
+      added++;
+    }
+  });
+  save('ags_customers', customers);
+  document.getElementById('bulkCustomerNames').value='';
+  renderCustomerList();
+  showToast(added + ' customer(s) added' + (names.length-added>0 ? (', '+(names.length-added)+' already existed') : '') + '.');
 }
 function deleteCustomer(id){
   showConfirm('Delete this customer and all their entries?', ()=>{
@@ -758,7 +838,149 @@ function printBill(){
   }
 }
 
+/* ---------------- ALL BILLS (print every customer's bill for a period, one after another) ---------------- */
+function getAllPeriods(){
+  const periodMap = {};
+  entries.forEach(e=>{
+    const p = getPeriodForDate(e.date);
+    periodMap[p.start+'|'+p.end] = p.label;
+  });
+  return periodMap;
+}
+function refreshAllBillsTab(){
+  const periodMap = getAllPeriods();
+  const keys = Object.keys(periodMap).sort().reverse();
+  const sel = document.getElementById('allBillsPeriod');
+  if(keys.length===0){
+    sel.innerHTML = '<option value="">No entries yet</option>';
+  } else {
+    sel.innerHTML = keys.map(k=>`<option value="${k}">${periodMap[k]}</option>`).join('');
+  }
+  document.getElementById('allBillsOutput').style.display='none';
+  document.getElementById('allBillsOutput').innerHTML='';
+  renderAllBillsRateInputs();
+}
+function renderAllBillsRateInputs(){
+  const periodVal = document.getElementById('allBillsPeriod').value;
+  const wrap = document.getElementById('allBillsRatesWrap');
+  if(!periodVal){ wrap.innerHTML=''; return; }
+  const [start,end] = periodVal.split('|');
+  const custIds = [...new Set(entries.filter(e=>e.date>=start && e.date<=end).map(e=>e.customerId))];
+  if(custIds.length===0){ wrap.innerHTML='<p class="empty">No entries in this period.</p>'; return; }
+
+  let html = '<label style="margin-top:16px;">Fill in the rate for each customer\'s days below, then Show All Bills</label>';
+  custIds.forEach(custId=>{
+    const cust = customers.find(c=>c.id===custId);
+    const custEntries = entries.filter(e=>e.customerId===custId && e.date>=start && e.date<=end);
+    const byFlower = {};
+    custEntries.forEach(e=>{
+      if(!byFlower[e.flowerCode]) byFlower[e.flowerCode] = [];
+      byFlower[e.flowerCode].push(e);
+    });
+    html += `<div class="card" style="margin-top:14px;"><h2 style="font-size:15px;">${cust?cust.name:'—'}</h2>`;
+    Object.keys(byFlower).forEach(code=>{
+      const fl = flowers.find(f=>f.code===code);
+      const rows = byFlower[code].slice().sort((a,b)=>a.date.localeCompare(b.date));
+      html += `<div class="flower-block">
+        <h3>${fl?fl.tamil+' ('+fl.code+')':code}</h3>
+        <div class="table-scroll"><table>
+          <tr><th>Date</th><th>Weight</th><th>Rate (₹/kg)</th></tr>
+          ${rows.map(e=>`<tr>
+            <td>${e.date}${e.session?' ('+e.session+')':''}</td>
+            <td>${formatGrams(e.qtyGrams)}</td>
+            <td><input type="number" step="any" class="allBillsRateInput" data-entry-id="${e.id}" value="${e.rate!=null?e.rate:''}" style="max-width:110px;"></td>
+          </tr>`).join('')}
+        </table></div>
+      </div>`;
+    });
+    html += `</div>`;
+  });
+  wrap.innerHTML = html;
+}
+function generateAllBills(){
+  const periodVal = document.getElementById('allBillsPeriod').value;
+  const out = document.getElementById('allBillsOutput');
+  if(!periodVal){ out.style.display='none'; showToast('Choose a billing period.'); return false; }
+  const [start,end] = periodVal.split('|');
+
+  const custIds = [...new Set(entries.filter(e=>e.date>=start && e.date<=end).map(e=>e.customerId))];
+  if(custIds.length===0){ out.style.display='none'; showToast('No entries in this period.'); return false; }
+
+  const rateInputs = document.querySelectorAll('.allBillsRateInput');
+  let missingRate = false;
+  rateInputs.forEach(inp=>{
+    const entry = entries.find(e=>e.id===inp.dataset.entryId);
+    const v = parseFloat(inp.value);
+    if(isNaN(v)){ missingRate = true; return; }
+    if(entry) entry.rate = v;
+  });
+  if(missingRate){ showToast('Enter a rate for every day, for every customer, before printing all bills.'); return false; }
+  save('ags_entries', entries);
+
+  const periodLabelSel = document.getElementById('allBillsPeriod');
+  const periodLabel = periodLabelSel.options[periodLabelSel.selectedIndex].text;
+
+  let allHtml = '';
+  custIds.forEach(custId=>{
+    const cust = customers.find(c=>c.id===custId);
+    const custEntries = entries.filter(e=>e.customerId===custId && e.date>=start && e.date<=end);
+    const byFlower = {};
+    custEntries.forEach(e=>{
+      if(!byFlower[e.flowerCode]) byFlower[e.flowerCode] = [];
+      byFlower[e.flowerCode].push(e);
+    });
+    let grandTotal = 0;
+    let flowerBlocksHtml = '';
+    Object.keys(byFlower).forEach(code=>{
+      const fl = flowers.find(f=>f.code===code);
+      const rows = byFlower[code].slice().sort((a,b)=>a.date.localeCompare(b.date));
+      let subtotal = 0;
+      const rowsHtml = rows.map(e=>{
+        const amount = (e.qtyGrams/1000)*e.rate;
+        subtotal += amount;
+        return `<tr><td>${e.date}${e.session?' ('+e.session+')':''}</td><td>${formatGrams(e.qtyGrams)}</td><td>₹${e.rate}</td><td>₹${amount.toFixed(2)}</td></tr>`;
+      }).join('');
+      grandTotal += subtotal;
+      flowerBlocksHtml += `
+        <div class="flower-block">
+          <h3>${fl?fl.tamil+' ('+fl.code+')':code}</h3>
+          <div class="table-scroll"><table>
+            <tr><th>Date</th><th>Weight</th><th>Rate</th><th>Amount</th></tr>
+            ${rowsHtml}
+            <tr class="flower-total-row"><td colspan="3">Total — ${fl?fl.tamil:code}</td><td>₹${subtotal.toFixed(2)}</td></tr>
+          </table></div>
+        </div>`;
+    });
+    allHtml += `
+      <div class="bill-paper">
+        <div class="bill-head">
+          <p class="logo">AGS</p>
+          <p class="biz-tamil">${settings.bizTamil}</p>
+          <p class="owner">${settings.owner}</p>
+          <p class="addr">${settings.addr}</p>
+          <p class="cell">Cell: ${settings.cell}</p>
+        </div>
+        <div class="bill-meta">
+          <div><strong>Customer:</strong> ${cust?cust.name:'—'}</div>
+          <div><strong>Billing Period:</strong> ${periodLabel}</div>
+        </div>
+        ${flowerBlocksHtml}
+        <div class="grand-total">GRAND TOTAL: ₹${grandTotal.toFixed(2)}</div>
+      </div>`;
+  });
+
+  out.innerHTML = allHtml;
+  out.style.display = 'block';
+  return true;
+}
+function printAllBills(){
+  if(generateAllBills()){
+    setTimeout(()=>window.print(), 50);
+  }
+}
+
 /* ---------------- INIT ---------------- */
+seedCustomersIfNeeded();
 renderSettingsForm();
 populateCustomerDropdowns();
 populateFlowerDropdown();
